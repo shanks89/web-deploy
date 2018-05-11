@@ -15,7 +15,79 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+	<properties>
+		<!-- Set docker.skip to true to disable Docker.
+			 Useful to build apps on systems where Docker is not installed. -->
+		<docker.skip>false</docker.skip>
+		<docker.repository>https://hub.docker.com/r/shanksdocker/webdeployproject/</docker.repository>
+		<docker.image.prefix>shanksdocker</docker.image.prefix>
+	</properties>
+
   <build>
     <finalName>webdeploy</finalName>
+
+    <plugins>
+				<plugin>
+					<groupId>com.spotify</groupId>
+					<artifactId>docker-maven-plugin</artifactId>
+					<version>0.4.10</version>
+					<configuration>
+						<imageName>${docker.image.prefix}/${project.artifactId}</imageName>
+						<baseImage>java:openjdk-8-jdk-alpine</baseImage>
+						<entryPoint>["java","-war","/${project.build.finalName}.war"]</entryPoint>
+						<imageTags>
+							<imageTag>${project.version}</imageTag>
+							<imageTag>latest</imageTag>
+						</imageTags>
+						<serverId>docker-hub</serverId>
+						<skipDockerBuild>${docker.skip}</skipDockerBuild>
+						<resources>
+							<!-- copy the service's jar file from target into the root directory of the image -->
+							<resource>
+								<targetPath>/</targetPath>
+								<directory>/Users/shashanksharma/Desktop/Tools/NewProj/</directory>
+								<include>${project.build.finalName}.war</include>
+							</resource>
+							<!-- Copy contents of project's docker directory, if it exists.
+							     Used to pull in docker build specific application.properties settings -->
+						</resources>
+					</configuration>
+					<executions>
+						<execution>
+							<id>build-image</id>
+							<phase>package</phase>
+							<goals>
+								<goal>build</goal>
+							</goals>
+						</execution>
+						<execution>
+							<id>tag-image-version</id>
+							<phase>deploy</phase>
+							<goals>
+								<goal>tag</goal>
+							</goals>
+							<configuration>
+								<image>${docker.image.prefix}/${project.artifactId}</image>
+								<newName>${docker.repository}/${docker.image.prefix}/${project.artifactId}:${project.version}</newName>
+								<pushImage>true</pushImage>
+							</configuration>
+						</execution>
+						<execution>
+							<id>tag-image-latest</id>
+							<phase>deploy</phase>
+							<goals>
+								<goal>tag</goal>
+							</goals>
+							<configuration>
+								<image>${docker.image.prefix}/${project.artifactId}</image>
+								<newName>${docker.repository}/${docker.image.prefix}/${project.artifactId}:latest</newName>
+								<pushImage>true</pushImage>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+
   </build>
 </project>
